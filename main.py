@@ -2,6 +2,8 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
 from handlers.twilio_call import initiate_call
 from handlers.twilio_ws import twilio_deepgram_bridge
 from starlette.websockets import WebSocketState
+import uvicorn
+import os
 
 app = FastAPI()
 
@@ -35,3 +37,7 @@ async def ws_twilio_endpoint(twilio_ws: WebSocket):
                 await twilio_ws.close()
         except Exception:
             pass
+
+if __name__ == "__main__":
+    PORT = int(os.getenv("PORT", 3000))
+    uvicorn.run("main:app", host="0.0.0.0", port= PORT, reload=True)
