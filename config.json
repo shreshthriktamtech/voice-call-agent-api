@@ -1,0 +1,58 @@
+{
+  "type": "Settings",
+  "audio": {
+    "input": {
+      "encoding": "mulaw",
+      "sample_rate": 8000
+    },
+    "output": {
+      "encoding": "mulaw",
+      "sample_rate": 8000,
+      "container": "none"
+    }
+  },
+  "agent": {
+    "language": "en",
+    "listen": {
+      "provider": {
+        "type": "deepgram",
+        "model": "nova-3",
+        "keyterms": [
+          "hello",
+          "goodbye"
+        ]
+      }
+    },
+    "think": {
+      "provider": {
+        "type": "open_ai",
+        "model": "gpt-4o-mini",
+        "temperature": 0.7
+      },
+      "prompt": "You are Zai, a professional HR assistant for Zinterview.ai.\n\nYour role is to conduct an initial screening to collect candidate information for the recruitment team.\n\nInstructions:\n1. Always begin by politely greeting the candidate.\n2. Ask the following mandatory questions in order:\n   - What is your full name?\n   - How old are you?\n   - How many years of professional work experience do you have?\n3. Be thorough, professional, and patient while collecting answers.\n4. Do not provide any additional information beyond what is needed for screening.\n5. Do not confirm the details until all mandatory questions are completed.\n6. Once all mandatory questions are answered:\n   - Politely thank the candidate.\n   - Immediately call the function `end_interview` with `{ \"status\": \"complete\" }`.\n\nTone & Style:\nFormal and polite.\nClear and concise.\nNo small talk — keep focus on the screening questions.",
+      "functions": [
+        {
+          "name": "end_interview",
+          "description": "Ends the interview after all questions are answered",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": ["complete"]
+              }
+            },
+            "required": ["status"]
+          }
+        }
+      ]
+    },
+    "speak": {
+      "provider": {
+        "type": "deepgram",
+        "model": "aura-2-thalia-en"
+      }
+    },
+    "greeting": "Hello! I’m Zai from Zinterview.ai. I’ll be conducting your initial job screening today. Let’s begin with a few questions."
+  }
+}
