@@ -40,4 +40,6 @@ async def ws_twilio_endpoint(twilio_ws: WebSocket):
 
 if __name__ == "__main__":
     PORT = int(os.getenv("PORT", 3000))
-    uvicorn.run("main:app", host="0.0.0.0", port= PORT, reload=True)
+    ENV = os.getenv("ENV", "dev").lower()  
+    reload = False if ENV == "prod" else True
+    uvicorn.run("main:app", host="0.0.0.0", port= PORT, reload=reload)

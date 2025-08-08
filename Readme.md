@@ -18,14 +18,18 @@ It allows a bot to speak, listen, transcribe in real-time, detect interruptions,
 ## 🛠 Requirements
 
 - **Python 3.9+**
-- **requirements.txt** already included in the repo.
+- **requirements.txt** included in the repo.
 
-Install dependencies:
+---
 
-```bash
-pip install -r requirements.txt
+## ⚙️ Environment Variables
 
+You need to set the following environment variables (for example, in a `.env` file):
 
-Run the project locally:  
-```bash
-python main.py
+```env
+DEEPGRAM_API_KEY=your_deepgram_api_key_here
+TWILIO_ACCOUNT_SID=your_twilio_account_sid_here
+TWILIO_AUTH_TOKEN=your_twilio_auth_token_here
+TWILIO_PHONE_NUMBER=your_twilio_phone_number_here
+PORT=3000
+TWILIO_WEBHOOK_URL=https://your-server.com/ws
