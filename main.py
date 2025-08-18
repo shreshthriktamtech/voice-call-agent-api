@@ -7,11 +7,11 @@ import os
 
 app = FastAPI()
 
-@app.get("/")
+@app.get("/api")
 def health_check():
     return {"status": "running"}
 
-@app.post("/start-call")
+@app.post("/api/start-call")
 async def start_call(request: Request):
     data = await request.json()
     destination_number = data.get("destination_number")
