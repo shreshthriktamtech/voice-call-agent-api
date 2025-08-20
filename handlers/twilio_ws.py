@@ -5,7 +5,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from dotenv import load_dotenv
 from starlette.websockets import WebSocketState
 from handlers.deepgram_ws import sts_connect
-from utils.helper import load_config
+from utils.helper import load_config, build_prompt
 load_dotenv()
 
 async def clear_twilio_stream_on_barge_in(decoded, twilio_ws, streamsid):
@@ -141,7 +141,7 @@ async def receive_twilio_audio(twilio_ws: WebSocket, audio_queue, streamsid_queu
         print(f"❌ receive_twilio_audio error: {e}")
 
 
-async def twilio_deepgram_bridge(twilio_ws: WebSocket):
+async def twilio_deepgram_bridge(twilio_ws: WebSocket, user_id):
     """Main handler to bridge Twilio and Deepgram."""
     conversation_log = []
     audio_queue = asyncio.Queue()
@@ -149,7 +149,8 @@ async def twilio_deepgram_bridge(twilio_ws: WebSocket):
 
     try:
         async with sts_connect() as sts_ws:
-            config_message = load_config()
+            config_message = await load_config()
+            config_message["agent"]["think"]["prompt"] = await build_prompt(user_id)
             await sts_ws.send(json.dumps(config_message))
 
             tasks = [
