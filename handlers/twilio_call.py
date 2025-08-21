@@ -18,7 +18,7 @@ def initiate_call(to_number: str, user_id: str) -> str:
     call = client.calls.create(
         to=to_number,
         from_=from_number,
-        url=f"{api_url}twilio-voice?user_id={user_id}",
+        url=f"{api_url}/twilio-voice?user_id={user_id}",
         status_callback=f"{api_url}/call-status?user_id={user_id}",
     )
 
