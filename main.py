@@ -48,6 +48,11 @@ async def create_user(user: User):
         user_dict = user.dict()
         user_dict["user_id"] = user_id
 
+        # ✅ Ensure phone has +91 prefix
+        phone = user_dict.get("phone", "")
+        if phone and not phone.startswith("+91"):
+            user_dict["phone"] = "+91" + phone
+
         result = await users_collection.insert_one(user_dict)
         user_dict["_id"] = str(result.inserted_id)
 
@@ -56,11 +61,11 @@ async def create_user(user: User):
             content={"message": "User created successfully", "user": user_dict}
         )
     except Exception as e:
-        # Log the error if needed
         return JSONResponse(
             status_code=500,
             content={"message": "Failed to create user", "error": str(e)}
         )
+
 
 
 @app.post("/api/start-batch-call")
