@@ -16,18 +16,17 @@ async def build_prompt(user_id: str) -> str:
     if not user:
         raise Exception(f"❌ User '{user_id}' not found in DB")
 
-    questions = user.get("questions", [])
+    instruction = user.get("instruction", [])
 
     base_prompt = (
         "You are Zai, a professional HR assistant for Zinterview.ai.\n\n"
         "Your role is to conduct an initial screening interview.\n\n"
         "Instructions:\n"
         "1. Always begin by politely greeting the candidate.\n"
-        "2. Ask the following questions in order:\n"
+        "2. Ask only 2 or 3 questions related to the below instruction\n"
     )
 
-    for i, q in enumerate(questions, start=1):
-        base_prompt += f"   {i}. {q}\n"
+    base_prompt += instruction
 
     base_prompt += (
         "3. Be thorough, professional, and patient while collecting answers.\n"

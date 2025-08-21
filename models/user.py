@@ -3,8 +3,8 @@ from typing import List, Optional
 
 class User(BaseModel):
     name: str
-    destination_number: str
-    selected: bool
-    callStatus: str
-    questions: Optional[List[str]] = [] 
-    transcript: Optional[str] = "" 
+    phone: str
+    call_status: Optional[str] = "pending" 
+    instruction: Optional[str] = "" 
+    schedule_time: Optional[str] = "" 
+    transcription: Optional[str] = "" 

@@ -1,7 +1,7 @@
 import os
 from twilio.rest import Client
 from dotenv import load_dotenv
-
+from db import users_collection
 load_dotenv()
 
 def initiate_call(to_number: str, user_id: str) -> str:
@@ -18,7 +18,13 @@ def initiate_call(to_number: str, user_id: str) -> str:
     call = client.calls.create(
         to=to_number,
         from_=from_number,
-        url=f"{api_url}?user_id={user_id}"
+        url=f"{api_url}twilio-voice?user_id={user_id}",
+        status_callback=f"{api_url}/call-status?user_id={user_id}",
+    )
+
+    result = users_collection.update_one(
+        {"user_id": user_id},
+        {"$set": {"call_status": "calling"}}
     )
     print(f"📞 Call initiated to {to_number}, SID: {call.sid}")
     return call.sid

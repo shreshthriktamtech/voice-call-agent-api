@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from starlette.websockets import WebSocketState
 from handlers.deepgram_ws import sts_connect
 from utils.helper import load_config, build_prompt
+from db import users_collection
 load_dotenv()
 
 async def clear_twilio_stream_on_barge_in(decoded, twilio_ws, streamsid):
@@ -21,7 +22,7 @@ async def clear_twilio_stream_on_barge_in(decoded, twilio_ws, streamsid):
         print(f"❌ clear_twilio_stream_on_barge_in error: {e}")
 
 
-async def finalize_interview(twilio_ws, conversation_log):
+async def finalize_interview(twilio_ws, conversation_log, user_id=None):
     """End the interview and log the transcript."""
     try:
         print("✅ Interview completed. Final transcript:")
@@ -37,11 +38,23 @@ async def finalize_interview(twilio_ws, conversation_log):
         else:
             print("⚠️ Twilio WebSocket already closed.")
 
+        # Update call status in DB
+        if user_id:
+            users_collection.update_one(
+                {"user_id": user_id},
+                {"$set": {
+                    "call_status": "completed",
+                    "transcription": conversation_log  # save transcript
+                }}
+            )
+
+
     except Exception as e:
         print(f"❌ finalize_interview error: {e}")
 
 
-async def process_deepgram_text(decoded, twilio_ws, sts_ws, streamsid, conversation_log):
+
+async def process_deepgram_text(decoded, twilio_ws, sts_ws, streamsid, conversation_log, user_id = None):
     """Process incoming text messages from Deepgram and handle interview flow."""
     print(decoded)
     try:
@@ -59,7 +72,7 @@ async def process_deepgram_text(decoded, twilio_ws, sts_ws, streamsid, conversat
         elif decoded["type"] == "FunctionCallRequest":
             for fn in decoded.get("functions", []):
                 if fn.get("name") == "end_interview":
-                    await finalize_interview(twilio_ws, conversation_log)
+                    await finalize_interview(twilio_ws, conversation_log, user_id)
                     return
 
         await clear_twilio_stream_on_barge_in(decoded, twilio_ws, streamsid)
@@ -77,7 +90,7 @@ async def forward_audio_to_deepgram(sts_ws, audio_queue):
         print(f"❌ forward_audio_to_deepgram error: {e}")
 
 
-async def relay_deepgram_to_twilio(sts_ws, twilio_ws, streamsid_queue, conversation_log):
+async def relay_deepgram_to_twilio(sts_ws, twilio_ws, streamsid_queue, conversation_log, user_id = None):
     """Receive Deepgram responses and relay them to Twilio."""
     try:
         streamsid = await streamsid_queue.get()
@@ -85,7 +98,7 @@ async def relay_deepgram_to_twilio(sts_ws, twilio_ws, streamsid_queue, conversat
         async for message in sts_ws:
             if isinstance(message, str):
                 decoded = json.loads(message)
-                await process_deepgram_text(decoded, twilio_ws, sts_ws, streamsid, conversation_log)
+                await process_deepgram_text(decoded, twilio_ws, sts_ws, streamsid, conversation_log, user_id)
             else:
                 # Send Deepgram audio directly
                 raw_mulaw = message
@@ -137,6 +150,10 @@ async def receive_twilio_audio(twilio_ws: WebSocket, audio_queue, streamsid_queu
                 break
     except WebSocketDisconnect:
         print("🔌 WebSocket disconnected")
+        users_collection.update_one(
+            {"user_id": user_id},
+            {"$set": {"call_status": "disconnected"}}
+        )
     except Exception as e:
         print(f"❌ receive_twilio_audio error: {e}")
 
@@ -147,6 +164,14 @@ async def twilio_deepgram_bridge(twilio_ws: WebSocket, user_id):
     audio_queue = asyncio.Queue()
     streamsid_queue = asyncio.Queue()
 
+    if user_id:
+        users_collection.update_one(
+            {"user_id": user_id},
+            {"$set": {
+                "call_status": "talking",
+            }}
+        )
+
     try:
         async with sts_connect() as sts_ws:
             config_message = await load_config()
@@ -155,7 +180,7 @@ async def twilio_deepgram_bridge(twilio_ws: WebSocket, user_id):
 
             tasks = [
                 asyncio.create_task(forward_audio_to_deepgram(sts_ws, audio_queue)),
-                asyncio.create_task(relay_deepgram_to_twilio(sts_ws, twilio_ws, streamsid_queue, conversation_log)),
+                asyncio.create_task(relay_deepgram_to_twilio(sts_ws, twilio_ws, streamsid_queue, conversation_log, user_id)),
                 asyncio.create_task(receive_twilio_audio(twilio_ws, audio_queue, streamsid_queue))
             ]
 
